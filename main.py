@@ -1,13 +1,12 @@
 import telebot
 from telebot import types
 from bot_enot.constants import my_token
+from bot_enot.spreadsheet import add_to_database
 
 bot = telebot.TeleBot(my_token)
 current_state = '0'
 current_group = None
-students_61 = ['1', '2', '3']
-students_62 = ['1', '2', '3']
-all_groups = {'ІО-61': students_61, 'ІО-62': students_62}
+current_student = None
 
 # создаем кнопки. хз нужно ли. можно будет убрать
 menu_group = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -24,26 +23,23 @@ menu_group_remove = types.ReplyKeyboardRemove()
 def handle_start_help(message):
     global current_state
     current_state = '1'
-    bot.send_message(message.chat.id, 'Виберіть групу:', reply_markup=menu_group)
+    bot.send_message(message.chat.id, 'Виберіть групу', reply_markup=menu_group)
 
 
 @bot.message_handler(commands=['help'])
 def handle_start_help(message):
-    print('help')
     bot.send_message(message.chat.id, 'Тут краткий гайд по тому, что делает этот бот')
 
 
 @bot.message_handler(func=lambda message: current_state == '1')
 def pick_group(message):
-    print('pick group')
     global current_state, current_group
 
     if message.text in ['ІО-61', 'ІО-62', 'ІО-63', 'ІО-64', 'ІО-65']:
-        bot.send_message(message.chat.id, 'Ви вибрали {}\nВиберіть студента (номер в списку групи)'
-                         .format(message.text), reply_markup=menu_group_remove)
+        bot.send_message(message.chat.id, 'Введіть прізвище студента'.format(message.text),
+                         reply_markup=menu_group_remove)
         current_state = '2'
-        current_group = all_groups[message.text]  # example: current_group  = 'ІО-61'
-        print(current_state, current_group)
+        current_group = message.text
 
     else:
         bot.send_message(message.chat.id, 'Виберіть групу')
@@ -51,30 +47,61 @@ def pick_group(message):
 
 @bot.message_handler(func=lambda message: current_state == '2')
 def pick_student(message):
-    print('pick student')
-    global current_state
+    global current_state, current_student
+    current_state = '3'
+    current_student = message.text
 
-    if message.text in current_group:
-        print(message.text, 'реально в', current_group)
-        bot.send_message(message.chat.id, 'есть такой. теперь введите оценки')
-        current_state = '3'
-
-    else:
-        print(message.text, 'не в', current_group)
-        bot.send_message(message.chat.id, 'нет такого')
+    bot.send_message(message.chat.id, 'Введіть оцінки')
 
 
 @bot.message_handler(func=lambda message: current_state == '3')
 def enter_marks(message):
     global current_state
-    print('enter marks')
     marks = message.text.split()
 
-    if len(marks) == 6:
-        print('right length')
-        bot.send_message(message.chat.id, 'Додано в базу даних')
+    if check_len(marks) and check_int(marks) and check_between(marks):
+        # делаем проверки правильности оценок и добавляем инфу в бд, если все ок
         current_state = '4'
-        # добавляем инфу в ексель
+
+        marks.insert(0, current_student)
+        adding(current_group, marks)
+        add_to_database(current_group, marks)
+
+        bot.send_message(message.chat.id, 'Додано в базу даних')
+    else:
+        bot.send_message(message.chat.id, 'Некоректні оцінки')
+
+
+def adding(group, values):
+    print(group)
+    print(values)
+
+
+def check_len(marks):
+    # проверка на правильное количество оценок
+    if len(marks) == 6:
+        return True
+    else:
+        return False
+
+
+def check_int(marks):
+    # проверка на целые числа
+    for i in marks:
+        try:
+            int(i)
+        except ValueError:
+            return False
+    return True
+
+
+def check_between(marks):
+    # проверка на верность данных оценки ( >60 & <100 )
+    for i in marks:
+        if int(i) > 100 or int(i) < 60:
+            return False
+
+    return True
 
 
 if __name__ == '__main__':
