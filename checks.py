@@ -33,3 +33,16 @@ def id_check(number):
     except ValueError:
         return False
     return True
+
+
+def name_check(text):
+    # проверка коректности фамилии. должно быть ---> Фамилия И. О.
+    from re import match
+
+    if not match('\w+ \w\. \w\.', text):
+        return False
+
+    if not match('\D+ \D\. \D\.', text):
+        return False
+
+    return True

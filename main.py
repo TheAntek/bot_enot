@@ -9,6 +9,7 @@ current_state = '0'
 current_group = None
 current_student = None
 current_id = None
+marks = None
 
 # создаем кнопки. хз нужно ли. можно будет убрать
 menu_group = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -74,9 +75,13 @@ def pick_group(message):
 @bot.message_handler(func=lambda message: current_state == '3')
 def pick_student(message):
     global current_state, current_student
-    current_state = '4'
-    current_student = message.text
-    bot.send_message(message.chat.id, 'Введите номер студента в списке группы'.format(message.text))
+
+    if name_check(message.text):
+        current_state = '4'
+        current_student = message.text
+        bot.send_message(message.chat.id, 'Введите номер студента в списке группы'.format(message.text))
+    else:
+        bot.send_message(message.chat.id, 'Введите коректные данные')
 
 
 @bot.message_handler(func=lambda message: current_state == '4')
@@ -94,19 +99,32 @@ def pick_id(message):
 
 @bot.message_handler(func=lambda message: current_state == '5')
 def enter_marks(message):
-    global current_state
+    global current_state, marks
     marks = message.text.split()
 
     if check_len(marks) and check_int(marks) and check_between(marks):
         # делаем проверки правильности оценок и добавляем инфу в бд, если все ок
         current_state = '6'
-
-        marks.insert(0, current_student)
-        add_to_database(current_group, current_id, marks)
-
-        bot.send_message(message.chat.id, 'Добавлено в базу данных')
+        bot.send_message(message.chat.id, 'Следующие данные будут добавлены:\n\nГруппа: ІО-{}\nСтудент: {}\nНомер: {}\n'
+                                          'Оценки: {}'.format(current_group, current_student, current_id, message.text),
+                         reply_markup=menu_choose)
     else:
         bot.send_message(message.chat.id, 'Введите коректные оценки')
+
+
+@bot.message_handler(func=lambda message: current_state == '6')
+def final(message):
+    global current_state, marks
+
+    if message.text == 'Да':
+        marks.insert(0, current_student)
+        add_to_database(current_group, current_id, marks)
+        bot.send_message(message.chat.id, 'Добавлено в базу данных', reply_markup=menu_choose_remove)
+        current_state = 'added'
+    elif message.text == 'Нет':
+        current_state = '0'
+    else:
+        bot.send_message(message.chat.id, 'Введите коректные данные')
 
 
 if __name__ == '__main__':
