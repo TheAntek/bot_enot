@@ -1,3 +1,7 @@
+# Work with google spreadsheets:
+# https://github.com/burnash/gspread
+# https://gspread.readthedocs.io/en/latest/
+
 import telebot
 from telebot import types
 from bot_enot.constants import my_token

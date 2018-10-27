@@ -45,4 +45,7 @@ def name_check(text):
     if not match('\D+ \D\. \D\.', text):
         return False
 
+    if not text.istitle():
+        return False
+
     return True
