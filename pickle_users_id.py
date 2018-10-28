@@ -6,7 +6,7 @@ def new_user(user_id):
     pickle_file_read = open('users.pickle', 'rb')
     dictionary = pickle.load(pickle_file_read)
 
-    dictionary[user_id] = '0'
+    dictionary[user_id] = ['0', None, None, None, None]
 
     pickle_file_write = open('users.pickle', 'wb')
     pickle.dump(dictionary, pickle_file_write)
@@ -18,7 +18,21 @@ def edit_user_state(user_id, new_state):
     pickle_file_read = open('users.pickle', 'rb')
     dictionary = pickle.load(pickle_file_read)
 
-    dictionary[user_id] = new_state
+    dictionary[user_id][0] = new_state
+
+    pickle_file_write = open('users.pickle', 'wb')
+    pickle.dump(dictionary, pickle_file_write)
+    pickle_file_write.close()
+
+
+def edit_user_inf(user_id, inf):
+    # редактировать (добавить) значение группы
+    pickle_file_read = open('users.pickle', 'rb')
+    dictionary = pickle.load(pickle_file_read)
+
+    for i in range(1, 5):
+        if check_user_state(user_id) == str(i):
+            dictionary[user_id][i] = inf
 
     pickle_file_write = open('users.pickle', 'wb')
     pickle.dump(dictionary, pickle_file_write)
@@ -31,7 +45,15 @@ def check_user_state(user_id):
     dictionary = pickle.load(pickle_file_read)
 
     if user_id in dictionary:
-        current_state = dictionary[user_id]
+        current_state = dictionary[user_id][0]
         return current_state
 
     return False
+
+
+def check_all_info(user_id):
+    # вытянуть все данные, которые ввёл пользователь
+    pickle_file_read = open('users.pickle', 'rb')
+    dictionary = pickle.load(pickle_file_read)
+
+    return dictionary[user_id]

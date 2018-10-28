@@ -7,13 +7,9 @@ from telebot import types
 from bot_enot.constants import my_token
 from bot_enot.spreadsheet import add_to_database
 from bot_enot.checks import *
+from bot_enot.pickle_users_id import *
 
 bot = telebot.TeleBot(my_token)
-current_state = '0'
-current_group = None
-current_student = None
-current_id = None
-marks = None
 
 # создаем кнопки. хз нужно ли. можно будет убрать
 menu_group = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
@@ -32,12 +28,19 @@ choose_2 = types.KeyboardButton('Нет')
 menu_choose.add(choose_1, choose_2)
 menu_choose_remove = types.ReplyKeyboardRemove()
 
+menu_1 = types.ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
+choose_1 = types.KeyboardButton('Добавить студента')
+choose_2 = types.KeyboardButton('Посмотреть студента')
+menu_1.add(choose_1, choose_2)
+menu_1_remove = types.ReplyKeyboardRemove()
+
 
 @bot.message_handler(commands=['start', 'reset'])
 def handle_start_help(message):
-    global current_state
-    current_state = '1'
-    bot.send_message(message.chat.id, 'Добавляете студента в БД?', reply_markup=menu_choose)
+
+    new_user(message.from_user.id)
+
+    bot.send_message(message.chat.id, 'Что хотите сделать?', reply_markup=menu_1)
 
 
 @bot.message_handler(commands=['help'])
@@ -50,83 +53,100 @@ def handle_start_help(message):
                                       '5) Подтвердите добавление')
 
 
-@bot.message_handler(func=lambda message: current_state == '1')
+@bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '0')
 def handle_start_help(message):
-    global current_state
 
-    if message.text == 'Да':
-        current_state = '2'
+    if message.text == 'Добавить студента':
+        edit_user_state(message.from_user.id, '1')
         bot.send_message(message.chat.id, 'Выберите группу', reply_markup=menu_group)
-    elif message.text == 'Нет':
-        current_state = 'w'
-        bot.send_message(message.chat.id, 'Другие функции появятся вскоре', reply_markup=menu_choose_remove)
+
+    elif message.text == 'Посмотреть студента':
+        edit_user_state(message.from_user.id, 'watch_1')
+        bot.send_message(message.chat.id, 'Выберите группу', reply_markup=menu_group)
 
 
-@bot.message_handler(func=lambda message: current_state == '2')
+@bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '1' or
+                                          check_user_state(message.from_user.id) == 'watch_1')
 def pick_group(message):
-    global current_state, current_group
 
     if message.text in ['61', '62', '63', '64', '65']:
         bot.send_message(message.chat.id, 'Введите фамилию и инициалы студента\n(Верба О. А.)'.
                          format(message.text), reply_markup=menu_group_remove)
-        current_state = '3'
-        current_group = message.text
+
+        edit_user_inf(message.from_user.id, message.text)  # записываем номер группы
+
+        if check_user_state(message.from_user.id) == '1':
+            edit_user_state(message.from_user.id, '2')
+
+        elif check_user_state(message.from_user.id) == 'watch_1':
+            edit_user_state(message.from_user.id, 'watch_2')
 
     else:
         bot.send_message(message.chat.id, 'Выберите коректную группу')
 
 
-@bot.message_handler(func=lambda message: current_state == '3')
+@bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == 'watch_2')
 def pick_student(message):
-    global current_state, current_student
+    global current_student
 
     if name_check(message.text):
-        current_state = '4'
+        edit_user_state(message.from_user.id, 'watch_3')
         current_student = message.text
+        bot.send_message(message.chat.id, '{}'.format(current_student))
+    else:
+        bot.send_message(message.chat.id, 'Введите коректные данные')
+
+
+@bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '2')
+def pick_student(message):
+
+    if name_check(message.text):
+        edit_user_inf(message.from_user.id, message.text)  # записываем Фамилия И. О.
+        edit_user_state(message.from_user.id, '3')
         bot.send_message(message.chat.id, 'Введите номер студента в списке группы'.format(message.text))
     else:
         bot.send_message(message.chat.id, 'Введите коректные данные')
 
 
-@bot.message_handler(func=lambda message: current_state == '4')
+@bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '3')
 def pick_id(message):
-    global current_state, current_id
 
-    if id_check(message.text):
-        # проверка коректности номера в списке
-        current_id = int(message.text)
-        current_state = '5'
+    if id_check(message.text):  # проверка коректности номера в списке
+        edit_user_inf(message.from_user.id, message.text)  # записываем номер студента
+        edit_user_state(message.from_user.id, '4')
         bot.send_message(message.chat.id, 'Введите оценки')
     else:
         bot.send_message(message.chat.id, 'Введите коректный номер студента в списку группы')
 
 
-@bot.message_handler(func=lambda message: current_state == '5')
+@bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '4')
 def enter_marks(message):
-    global current_state, marks
     marks = message.text.split()
 
     if check_len(marks) and check_int(marks) and check_between(marks):
         # делаем проверки правильности оценок и добавляем инфу в бд, если все ок
-        current_state = '6'
+        edit_user_inf(message.from_user.id, marks)
+        edit_user_state(message.from_user.id, '5')
+        result = check_all_info(message.from_user.id)
         bot.send_message(message.chat.id, 'Следующие данные будут добавлены:\n\nГруппа: ІО-{}\nСтудент: {}\nНомер: {}\n'
-                                          'Оценки: {}'.format(current_group, current_student, current_id, message.text),
+                                          'Оценки: {}'.format(result[1], result[2], result[3], ' '.join(result[4])),
                          reply_markup=menu_choose)
     else:
         bot.send_message(message.chat.id, 'Введите коректные оценки')
 
 
-@bot.message_handler(func=lambda message: current_state == '6')
+@bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '5')
 def final(message):
-    global current_state, marks
 
     if message.text == 'Да':
-        marks.insert(0, current_student)
-        add_to_database(current_group, current_id, marks)
+        result = check_all_info(message.from_user.id)
+        result[4].insert(0, result[2])
+        # добавляем:  № группы | № студента | [Фамилия И. О., 60, 75 ...]
+        add_to_database(result[1], result[3], result[4])
         bot.send_message(message.chat.id, 'Добавлено в базу данных', reply_markup=menu_choose_remove)
-        current_state = 'added'
+        edit_user_state(message.from_user.id, 'added')
     elif message.text == 'Нет':
-        current_state = '0'
+        edit_user_state(message.from_user.id, None)
     else:
         bot.send_message(message.chat.id, 'Введите коректные данные')
 
