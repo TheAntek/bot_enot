@@ -68,7 +68,6 @@ def handle_start_help(message):
 @bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '1' or
                                           check_user_state(message.from_user.id) == 'watch_1')
 def pick_group(message):
-
     if message.text in ['61', '62', '63', '64', '65']:
         bot.send_message(message.chat.id, 'Введите фамилию и инициалы студента\n(Верба О. А.)'.
                          format(message.text), reply_markup=menu_group_remove)
@@ -87,12 +86,12 @@ def pick_group(message):
 
 @bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == 'watch_2')
 def pick_student(message):
-    global current_student
 
-    if name_check(message.text):
-        edit_user_state(message.from_user.id, 'watch_3')
-        current_student = message.text
-        bot.send_message(message.chat.id, '{}'.format(current_student))
+    if student_exist(check_all_info(message.from_user.id)[1], message.text):
+        edit_user_inf(message.from_user.id, message.text)
+        bot.send_message(message.chat.id, 'Студент: {}\nОценки: {}\n\n/start - начать сначала'.
+                         format(message.text, get_marks(check_all_info(message.from_user.id)[1], message.text)))
+        edit_user_state(message.from_user.id, None)
     else:
         bot.send_message(message.chat.id, 'Введите коректные данные')
 
@@ -154,6 +153,7 @@ def final(message):
         edit_user_state(message.from_user.id, 'added')
     elif message.text == 'Нет':
         edit_user_state(message.from_user.id, None)
+        bot.send_message(message.chat.id, '/start - начать сначала', reply_markup=menu_choose_remove)
     else:
         bot.send_message(message.chat.id, 'Введите коректные данные')
 

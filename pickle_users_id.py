@@ -31,7 +31,7 @@ def edit_user_inf(user_id, inf):
     dictionary = pickle.load(pickle_file_read)
 
     for i in range(1, 5):
-        if check_user_state(user_id) == str(i):
+        if check_user_state(user_id)[-1] == str(i):  # '1'[-1] = 1;  'watch_1'[-1] = 1
             dictionary[user_id][i] = inf
 
     pickle_file_write = open('users.pickle', 'wb')
