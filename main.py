@@ -5,7 +5,7 @@
 import telebot
 from telebot import types
 from bot_enot.constants import my_token
-from bot_enot.spreadsheet import add_to_database
+from bot_enot.spreadsheet import *
 from bot_enot.checks import *
 from bot_enot.pickle_users_id import *
 
@@ -100,10 +100,14 @@ def pick_student(message):
 @bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '2')
 def pick_student(message):
 
-    if name_check(message.text):
+    if student_exist(check_all_info(message.from_user.id)[1], message.text):
+        bot.send_message(message.chat.id, 'Студент уже в базе данных')
+
+    elif name_check(message.text):
         edit_user_inf(message.from_user.id, message.text)  # записываем Фамилия И. О.
         edit_user_state(message.from_user.id, '3')
-        bot.send_message(message.chat.id, 'Введите номер студента в списке группы'.format(message.text))
+        bot.send_message(message.chat.id, 'Введите номер студента в списке группы')
+
     else:
         bot.send_message(message.chat.id, 'Введите коректные данные')
 
@@ -112,9 +116,12 @@ def pick_student(message):
 def pick_id(message):
 
     if id_check(message.text):  # проверка коректности номера в списке
-        edit_user_inf(message.from_user.id, message.text)  # записываем номер студента
-        edit_user_state(message.from_user.id, '4')
-        bot.send_message(message.chat.id, 'Введите оценки')
+        if id_exist(check_all_info(message.from_user.id)[1], message.text):
+            bot.send_message(message.chat.id, 'Студент с таким номером уже существует')
+        else:
+            edit_user_inf(message.from_user.id, message.text)  # записываем номер студента
+            edit_user_state(message.from_user.id, '4')
+            bot.send_message(message.chat.id, 'Введите оценки')
     else:
         bot.send_message(message.chat.id, 'Введите коректный номер студента в списку группы')
 

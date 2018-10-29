@@ -26,7 +26,7 @@ def edit_user_state(user_id, new_state):
 
 
 def edit_user_inf(user_id, inf):
-    # редактировать (добавить) значение группы
+    # редактировать (добавить) значение группы / ФИО/ id/ оценки
     pickle_file_read = open('users.pickle', 'rb')
     dictionary = pickle.load(pickle_file_read)
 
