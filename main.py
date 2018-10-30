@@ -8,6 +8,7 @@ from bot_enot.constants import my_token
 from bot_enot.spreadsheet import *
 from bot_enot.checks import *
 from bot_enot.pickle_users_id import *
+from statistics import mean
 
 bot = telebot.TeleBot(my_token)
 
@@ -36,7 +37,7 @@ menu_1_remove = types.ReplyKeyboardRemove()
 
 
 @bot.message_handler(commands=['start', 'reset'])
-def handle_start_help(message):
+def handle_start(message):
 
     new_user(message.from_user.id)
 
@@ -44,7 +45,7 @@ def handle_start_help(message):
 
 
 @bot.message_handler(commands=['help'])
-def handle_start_help(message):
+def handle_help(message):
     bot.send_message(message.chat.id, 'Чтобы добавить студента в БД:\n'
                                       '1) Выберите группу\n'
                                       '2) Введите фамилию и инициалы\n'
@@ -54,7 +55,7 @@ def handle_start_help(message):
 
 
 @bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '0')
-def handle_start_help(message):
+def handle_start_choose(message):
 
     if message.text == 'Добавить студента':
         edit_user_state(message.from_user.id, '1')
@@ -93,7 +94,7 @@ def pick_student(message):
                          format(message.text, get_marks(check_all_info(message.from_user.id)[1], message.text)))
         edit_user_state(message.from_user.id, None)
     else:
-        bot.send_message(message.chat.id, 'Введите коректные данные')
+        bot.send_message(message.chat.id, 'Такого студента нет в таблице')
 
 
 @bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '2')
@@ -145,10 +146,13 @@ def enter_marks(message):
 def final(message):
 
     if message.text == 'Да':
-        result = check_all_info(message.from_user.id)
-        result[4].insert(0, result[2])
-        # добавляем:  № группы | № студента | [Фамилия И. О., 60, 75 ...]
-        add_to_database(result[1], result[3], result[4])
+        result = check_all_info(message.from_user.id)  # result = [ 'state', 'ФИО', 'id', [n marks] ]
+        student_name_and_marks = list(map(lambda x: int(x), result[4]))  # преобразовываем str в int в списке
+        student_name_and_marks.append(round(mean(student_name_and_marks), 2))  # добавялем в конец списка AVG mark
+        student_name_and_marks.insert(0, result[2])  # добавляем в начало списка ФИО
+
+        # добавляем:  № группы | № студента | [Фамилия И. О., 60, 75 ... AVG]
+        add_to_database(result[1], result[3], student_name_and_marks)
         bot.send_message(message.chat.id, 'Добавлено в базу данных', reply_markup=menu_choose_remove)
         edit_user_state(message.from_user.id, 'added')
     elif message.text == 'Нет':
