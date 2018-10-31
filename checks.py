@@ -37,7 +37,7 @@ def id_check(number):
 
 def name_check(text):
     # проверка коректности фамилии. должно быть ---> Фамилия И. О.
-    from re import match
+    from re import match, compile
 
     if not match('\w+ \w\. \w\.', text):
         return False
@@ -46,6 +46,9 @@ def name_check(text):
         return False
 
     if not text.istitle():
+        return False
+
+    if len(list(text)) != len([w for w in filter(compile("[а-яА-Я .]+").match, list(text))]):  # сюда не смотреть
         return False
 
     return True
