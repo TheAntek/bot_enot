@@ -46,12 +46,10 @@ def handle_start(message):
 
 @bot.message_handler(commands=['help'])
 def handle_help(message):
-    bot.send_message(message.chat.id, 'Чтобы добавить студента в БД:\n'
-                                      '1) Выберите группу\n'
-                                      '2) Введите фамилию и инициалы\n'
-                                      '3) Введите номер в списке\n'
-                                      '4) Введите оценки\n'
-                                      '5) Подтвердите добавление')
+    bot.send_message(message.chat.id, '*Краткое руководство*\n\n> Добавьте студента\n> Посмотрите статистику\n> '
+                                      'Плачьте\n\nВсе данные хранятся в [Google Таблице](https://docs.google.com/'
+                                      'spreadsheets/d/1d9u1CD0zkkRPkDP0AyJHAeGYcKfYN9BSp8GyoyHbj7g/edit#gid=0)',
+                     parse_mode='Markdown')
 
 
 @bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '0')
@@ -70,8 +68,8 @@ def handle_start_choose(message):
                                           check_user_state(message.from_user.id) == 'watch_1')
 def pick_group(message):
     if message.text in ['61', '62', '63', '64', '65']:
-        bot.send_message(message.chat.id, 'Введите фамилию и инициалы студента\n(Верба О. А.)'.
-                         format(message.text), reply_markup=menu_group_remove)
+        bot.send_message(message.chat.id, 'Введите фамилию и инициалы студента\n_(Верба О. А.)_'.
+                         format(message.text), reply_markup=menu_group_remove, parse_mode='Markdown')
 
         edit_user_inf(message.from_user.id, message.text)  # записываем номер группы
 
@@ -90,8 +88,13 @@ def pick_student(message):
 
     if student_exist(check_all_info(message.from_user.id)[1], message.text):
         edit_user_inf(message.from_user.id, message.text)
-        bot.send_message(message.chat.id, 'Студент: {}\nОценки: {}\n\n/start - начать сначала'.
-                         format(message.text, get_marks(check_all_info(message.from_user.id)[1], message.text)))
+        all_student_marks = get_marks(check_all_info(message.from_user.id)[1], message.text)  # все оценки студента
+        avg_group_marks = average_marks(check_all_info(message.from_user.id)[1])
+
+        bot.send_message(message.chat.id, f'*Студент:* {message.text}\n*Оценки:* {all_student_marks[0]}\n*Средний балл:'
+                                          f'*{all_student_marks[1]}\n*Позиция в группе:* '
+                                          f'{avg_group_marks.index(all_student_marks[1])+1} из {len(avg_group_marks)}'
+                                          f'\n\n/start - начать сначала', parse_mode='Markdown')
         edit_user_state(message.from_user.id, None)
     else:
         bot.send_message(message.chat.id, 'Такого студента нет в таблице')
@@ -153,7 +156,8 @@ def final(message):
 
         # добавляем:  № группы | № студента | [Фамилия И. О., 60, 75 ... AVG]
         add_to_database(result[1], result[3], student_name_and_marks)
-        bot.send_message(message.chat.id, 'Добавлено в базу данных', reply_markup=menu_choose_remove)
+        bot.send_message(message.chat.id, 'Добавлено в базу данных\n\n/start - начать сначала',
+                         reply_markup=menu_choose_remove)
         edit_user_state(message.from_user.id, 'added')
     elif message.text == 'Нет':
         edit_user_state(message.from_user.id, None)
