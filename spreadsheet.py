@@ -9,9 +9,9 @@ def add_to_database(group, number, values):
     client = gspread.authorize(creds)
 
     sheet = client.open('Students').get_worksheet(int(group[-1])-1)
-    # sheet.insert_row(values, int(number)+1)
+
     for i in range(len(values)):
-        sheet.update_cell(int(number)+1, i+1, values[i])
+        sheet.update_cell(int(number)+10, i+1, values[i])
 
 
 def student_exist(group, name):
@@ -36,7 +36,7 @@ def id_exist(group, number):
     client = gspread.authorize(creds)
 
     sheet = client.open('Students').get_worksheet(int(group[-1]) - 1)
-    val = sheet.cell(int(number)+1, 1).value
+    val = sheet.cell(int(number)+10, 1).value
 
     if val != '':
         return True
