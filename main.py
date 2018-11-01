@@ -69,7 +69,7 @@ def pick_student(message):
         avg_group_marks = average_marks(check_all_info(message.from_user.id)[1])
 
         bot.send_message(message.chat.id, f'*Студент:* {message.text}\n*Оценки:* {all_student_marks[0]}\n*Средний балл:'
-                                          f'*{all_student_marks[1]}\n*Позиция в группе:* '
+                                          f'* {all_student_marks[1]}\n*Позиция в группе:* '
                                           f'{avg_group_marks.index(all_student_marks[1])+1} из {len(avg_group_marks)}'
                                           f'\n\n/start - начать сначала', parse_mode='Markdown')
         edit_user_state(message.from_user.id, None)

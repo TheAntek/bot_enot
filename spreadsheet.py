@@ -66,6 +66,8 @@ def average_marks(group):
     client = gspread.authorize(creds)
 
     sheet = client.open('Students').get_worksheet(int(group[-1]) - 1)
-    avg_values = sheet.col_values(8)[1:]  # весь столбец без названия столбца
+    avg_values = sheet.col_values(8)[10:]  # весь столбец без названия столбца
 
-    return sorted(avg_values, reverse=True)
+    result = [x for x in avg_values if x]  # убираем пустые значения из списка
+
+    return sorted(result, reverse=True)
