@@ -45,7 +45,7 @@ def handle_start_choose(message):
                                           check_user_state(message.from_user.id) == 'watch_1')
 def pick_group(message):
     if message.text in ['61', '62', '63', '64', '65']:
-        bot.send_message(message.chat.id, 'Введите фамилию и инициалы студента\n_(Верба О. А.)_'.
+        bot.send_message(message.chat.id, 'Введите фамилию и инициалы студента\n\nПример: _Верба О. А._'.
                          format(message.text), reply_markup=menu_group_remove, parse_mode='Markdown')
 
         edit_user_inf(message.from_user.id, message.text)  # записываем номер группы
@@ -103,7 +103,7 @@ def pick_id(message):
             edit_user_state(message.from_user.id, '4')
             bot.send_message(message.chat.id, 'Введите оценки')
     else:
-        bot.send_message(message.chat.id, 'Введите коректный номер студента в списку группы')
+        bot.send_message(message.chat.id, 'Введите коректный номер студента в списке группы')
 
 
 @bot.message_handler(func=lambda message: check_user_state(message.from_user.id) == '4')
@@ -115,9 +115,10 @@ def enter_marks(message):
         edit_user_inf(message.from_user.id, marks)
         edit_user_state(message.from_user.id, '5')
         result = check_all_info(message.from_user.id)
-        bot.send_message(message.chat.id, 'Следующие данные будут добавлены:\n\nГруппа: ІО-{}\nСтудент: {}\nНомер: {}\n'
-                                          'Оценки: {}'.format(result[1], result[2], result[3], ' '.join(result[4])),
-                         reply_markup=menu_choose)
+        bot.send_message(message.chat.id, 'Следующие данные будут добавлены:\n\n*Группа:* ІО-{}\n*Студент:* {}\n*Номер:'
+                                          '* {}\n*Оценки:* {}'.format(result[1], result[2], result[3], ' '
+                                                                      .join(result[4])),
+                         reply_markup=menu_choose, parse_mode='Markdown')
     else:
         bot.send_message(message.chat.id, 'Введите коректные оценки')
 
@@ -133,8 +134,8 @@ def final(message):
 
         # добавляем:  № группы | № студента | [Фамилия И. О., 60, 75 ... AVG]
         add_to_database(result[1], result[3], student_name_and_marks)
-        bot.send_message(message.chat.id, 'Добавлено в базу данных\n\n/start - начать сначала',
-                         reply_markup=menu_choose_remove)
+        bot.send_message(message.chat.id, '*Добавлено в базу данных*\n\n/start - начать сначала',
+                         reply_markup=menu_choose_remove, parse_mode='Markdown')
         edit_user_state(message.from_user.id, 'added')
     elif message.text == 'Нет':
         edit_user_state(message.from_user.id, None)

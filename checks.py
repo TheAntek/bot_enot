@@ -39,6 +39,9 @@ def name_check(text):
     # проверка коректности фамилии. должно быть ---> Фамилия И. О.
     from re import match, compile
 
+    if text[-1] == ' ':
+        text = text[:-1]
+
     if not match('\w+ \w\. \w\.', text):
         return False
 
